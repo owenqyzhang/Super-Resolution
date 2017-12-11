@@ -7,14 +7,14 @@ def conv(x, hidden_num=64, kernel_size=3, stride=1, w_decay=True):
     in_channels = x.get_shape()[3]
     if w_decay:
         weight_decay = tf.constant(0.05, dtype=tf.float32)
-        W = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
+        w = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
                             initializer=tf.contrib.layers.variance_scaling_initializer(),
                             regularizer=tf.contrib.layers.l2_regularizer(weight_decay))
     else:
-        W = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
+        w = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
                             initializer=tf.contrib.layers.variance_scaling_initializer())
 
-    x = tf.nn.conv2d(x, W, strides=[1, stride, stride, 1], padding='SAME')
+    x = tf.nn.conv2d(x, w, strides=[1, stride, stride, 1], padding='SAME')
 
     return x
 
@@ -30,7 +30,7 @@ def dense(x, hidden_num, is_train):
     return x
 
 
-def res_block(x, output_channel, stride, scope, flags):
+def res_block(x, scope, flags, output_channel=64, stride=1):
     with tf.variable_scope(scope):
         x1 = conv(x, output_channel, stride=stride)
         x1 = batch_norm(x1, is_train=flags.is_training)
@@ -38,6 +38,26 @@ def res_block(x, output_channel, stride, scope, flags):
         x1 = conv(x1, output_channel, stride=stride)
         x1 = batch_norm(x1, is_train=flags.is_training)
         x1 = tf.add(x, x1)
+
+    return x1
+
+
+def res_block_edsr(x, scope, output_channel=64, scale=1, stride=1):
+    with tf.variable_scope(scope):
+        x1 = conv(x, output_channel, stride=stride)
+        x1 = tf.nn.relu(x1)
+        x1 = conv(x1, output_channel, stride=stride)
+        x1 = tf.multiply(x1, tf.constant(scale))
+        x1 = tf.add(x, x1)
+
+    return x1
+
+
+def discriminator_block(x, output_channel, kernel_size, stride, scope, flags):
+    with tf.variable_scope(scope):
+        x1 = conv(x, kernel_size=kernel_size, hidden_num=output_channel, stride=stride)
+        x1 = batch_norm(x1, flags.is_training)
+        x1 = lrelu(x1, 0.2)
 
     return x1
 
@@ -51,7 +71,7 @@ def prelu(x, name='PReLU'):
     return pos + neg
 
 
-def lrealu(x, alpha=0.3, name='LeakyReLU'):
+def lrelu(x, alpha=0.3, name='LeakyReLU'):
     with tf.variable_scope(name):
         return tf.nn.relu(x) - alpha * tf.nn.relu(-x)
 
@@ -123,13 +143,13 @@ def print_configuration_op(flags):
     a = flags.mode
     for name, value in flags.__flags.items():
         if type(value) == float:
-            print('\t%s: %f'%(name, value))
+            print('\t%s: %f' % (name, value))
         elif type(value) == int:
-            print('\t%s: %d'%(name, value))
+            print('\t%s: %d' % (name, value))
         elif type(value) == str:
-            print('\t%s: %s'%(name, value))
+            print('\t%s: %s' % (name, value))
         elif type(value) == bool:
-            print('\t%s: %s'%(name, value))
+            print('\t%s: %s' % (name, value))
         else:
             print('\t%s: %s' % (name, value))
 
