@@ -1,4 +1,5 @@
 import tensorflow as tf
+import tensorflow.contrib.slim as slim
 import numpy as np
 
 
@@ -159,3 +160,36 @@ def compute_psnr(ref, target):
     psnr = 10. * (tf.log(255. * 255. / mse) / tf.log(10.))
 
     return psnr
+
+
+def vgg_arg_scope(weight_decay=0.0005):
+    with slim.arg_scope([slim.conv2d, slim.fully_connected],
+                        activation_fn=tf.nn.relu,
+                        weights_regularizer=slim.l2_regularizer(weight_decay),
+                        biases_initializer=tf.zeros_initializer()):
+        with slim.arg_scope([slim.conv2d], padding='SAME') as arg_sc:
+            return arg_sc
+
+
+def vgg_19(inputs, scope='vgg_19', reuse=False):
+    with tf.variable_scope(scope, 'vgg_19', [inputs], reuse=reuse) as sc:
+        end_points_collection = sc.name + '_end_points'
+        with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
+                            output_collections=end_points_collection):
+            x = slim.repeat(inputs, 2, slim.conv2d, 64, 3, scope='conv1', reuse=reuse)
+            x = slim.max_pool2d(x, [2, 2], scope='pool1')
+            x = slim.repeat(x, 2, slim.conv2d, 128, 3, scope='conv2', reuse=reuse)
+            x = slim.max_pool2d(x, [2, 2], scope='pool2')
+            x = slim.repeat(x, 4, slim.conv2d, 256, 3, scope='conv3', reuse=reuse)
+            x = slim.max_pool2d(x, [2, 2], scope='pool3')
+            x = slim.repeat(x, 4, slim.conv2d, 512, 3, scope='conv4', reuse=reuse)
+            x = slim.max_pool2d(x, [2, 2], scope='pool4')
+            x = slim.repeat(x, 4, slim.conv2d, 512, 3, scope='conv5', reuse=reuse)
+            x = slim.max_pool2d(x, [2, 2], scope='pool5')
+
+            end_points = slim.utils.convert_collection_to_dict(end_points_collection)
+
+            return x, end_points
+
+
+vgg_19.default_image_size = 224

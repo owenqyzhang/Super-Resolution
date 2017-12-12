@@ -1,5 +1,4 @@
-from ops import *
-from utils import *
+from networks import *
 
 Flags = tf.app.flags
 

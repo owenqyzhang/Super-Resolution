@@ -2,8 +2,6 @@ import tensorflow as tf
 import collections
 import os
 import math
-import scipy.misc as sic
-import numpy as np
 
 
 def preprocess(image):
@@ -90,7 +88,7 @@ def data_loader(flags):
                 if flags.random_crop and flags.mode == 'train':
                     print('[Config] Use random crop')
                     input_size = tf.shape(inputs)
-                    target_size = tf.shape(targets)
+                    # target_size = tf.shape(targets)
                     offset_w = tf.cast(tf.floor(tf.random_uniform([], 0,
                                                                   tf.cast(input_size[1],
                                                                           tf.float32) - flags.crop_size)),
@@ -142,3 +140,38 @@ def data_loader(flags):
                     targets=targets_batch,
                     image_count=len(image_list_lr),
                     steps_per_epoch=steps_per_epoch)
+
+
+def save_image(fetches, flags, step=None):
+    image_dir = os.path.join(flags.output_dir, 'images')
+    if not os.path.exists(image_dir):
+        os.makedirs(image_dir)
+
+    filesets = []
+    in_path = fetches['path_LR']
+    name, _ = os.path.splitext(os.path.basename(str(in_path)))
+    fileset = {'name': name, 'step': step}
+
+    if flags.mode == 'inference':
+        kind = 'outputs'
+        filename = name + '.png'
+        if step is not None:
+            filename = '%08d-%s' % (step, filename)
+        fileset[kind] = filename
+        out_path = os.path.join(image_dir, filename)
+        contents = fetches[kind][0]
+        with open(out_path, 'wb') as f:
+            f.write(contents)
+        filesets.append(fileset)
+    else:
+        for kind in ['inputs', 'outputs', 'targets']:
+            filename = name + '_' + kind + '.png'
+            if step is not None:
+                filename = '%08d-%s' % (step, filename)
+            fileset[kind] = filename
+            out_path = os.path.join(image_dir, filename)
+            contents = fetches[kind][0]
+            with open(out_path, 'wb') as f:
+                f.write(contents)
+        filesets.append(fileset)
+    return filesets

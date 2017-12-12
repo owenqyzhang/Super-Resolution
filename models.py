@@ -1,4 +1,3 @@
-import tensorflow as tf
 from ops import *
 
 
@@ -57,19 +56,16 @@ def generator_EDSR(gen_inputs, gen_output_channels, reuse=False, flags=None):
 
         with tf.variable_scope('resblock_output'):
             x1 = conv(x1, hidden_num=256, kernel_size=3, stride=1)
-            # x1 = batch_norm(x1, flags.is_training)
 
         x1 = tf.add(x1, stage1)
 
         with tf.variable_scope('sub_pixel_conv_stage1'):
             x1 = conv(x1, hidden_num=256)
             x1 = pixel_shuffler(x1, scale=2)
-            # x1 = prelu(x1)
 
         with tf.variable_scope('sub_pixel_conv_stage2'):
             x1 = conv(x1, hidden_num=256)
             x1 = pixel_shuffler(x1, scale=2)
-            # x1 = prelu(x1)
 
         with tf.variable_scope('output_stage'):
             x1 = conv(x1, gen_output_channels, kernel_size=9)
@@ -109,3 +105,16 @@ def discriminator(dis_inputs, flags=None):
             x1 = dense(x1, 1, flags.is_training)
 
     return x1
+
+
+def vgg19_slim(inputs, loss_type, reuse, scope):
+    if loss_type == 'VGG54':
+        target_layer = scope + 'vgg_19/conv5/conv5_4'
+    elif loss_type == 'VGG22':
+        target_layer = scope + 'vgg_19/conv2/conv2_2'
+    else:
+        NotImplementedError('Unknown perceptual loss type')
+    _, output = vgg_19(inputs, reuse=reuse)
+    output = output[target_layer]
+
+    return output
