@@ -130,14 +130,6 @@ def phase_shift(x, shape_1, shape_2):
     return tf.reshape(x, shape_2)
 
 
-def random_flip(x, decision):
-    f1 = tf.identity(x)
-    f2 = tf.image.flip_left_right(x)
-    output = tf.cond(tf.less(decision, 0.5), lambda: f2, lambda: f1)
-
-    return output
-
-
 def print_configuration_op(flags):
     print('[Confiurations]:')
     a = flags.mode
