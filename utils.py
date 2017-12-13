@@ -2,6 +2,8 @@ import tensorflow as tf
 import collections
 import os
 import math
+import scipy.misc as sic
+import numpy as np
 
 
 def preprocess(image):
@@ -134,12 +136,82 @@ def data_loader(flags):
             inputs_batch.set_shape([flags.batch_size, flags.crop_size, flags.crop_size, 3])
             target_images.set_shape([flags.batch_size, flags.crop_size * 4, flags.crop_size * 4, 3])
 
-        return data(paths_LR=paths_lr_batch,
-                    paths_HR=paths_hr_batch,
-                    inputs=inputs_batch,
-                    targets=targets_batch,
-                    image_count=len(image_list_lr),
-                    steps_per_epoch=steps_per_epoch)
+    return data(paths_LR=paths_lr_batch,
+                paths_HR=paths_hr_batch,
+                inputs=inputs_batch,
+                targets=targets_batch,
+                image_count=len(image_list_lr),
+                steps_per_epoch=steps_per_epoch)
+
+
+def test_data_loader(flags):
+    if flags.input_dir_LR == 'None' or flags.input_dir_HR == 'None':
+        raise ValueError('Input directory is not provided.')
+
+    if not os.path.exists(flags.input_dir_LR) or not os.path.exists(flags.input_dir_HR):
+        raise ValueError('Input directory not found.')
+
+    image_list_lr_temp = os.listdir(flags.input_dir_LR)
+    image_list_lr = [os.path.join(flags.input_dir_LR, _) for _ in image_list_lr_temp if _.split('.')[-1] == 'png']
+    image_list_hr = [os.path.join(flags.input_dir_HR, _) for _ in image_list_lr_temp if _.split('.')[-1] == 'png']
+
+    def preprocess_test(name, mode):
+        im = sic.imread(name).astype(np.float32)
+        if im.shape[-1] != 3:
+            h, w = im.shape
+            temp = np.empty((h, w, 3), dtype=np.uint8)
+            temp[:, :, :] = im[:, :, np.newaxis]
+            im = temp.copy()
+        if mode == 'LR':
+            im = im / np.max(im)
+        elif mode == 'HR':
+            im = im / np.max(im)
+            im = im * 2 - 1
+
+        return im
+
+    image_lr = [preprocess_test(_, 'LR') for _ in image_list_lr]
+    image_hr = [preprocess_test(_, 'HR') for _ in image_list_hr]
+
+    data = collections.namedtuple('data', 'paths_LR, paths_HR, inputs, targets')
+
+    return data(paths_LR=image_list_lr,
+                paths_HR=image_list_hr,
+                inputs=image_lr,
+                targets=image_hr)
+
+
+def inference_data_loader(flags):
+    if flags.input_dir_LR == 'None':
+        raise ValueError('Input directory is not provided.')
+
+    if not os.path.exists(flags.input_dir_LR):
+        raise ValueError('Input directory not found.')
+
+    image_list_lr_temp = os.listdir(flags.input_dir_LR)
+    image_list_lr = [os.path.join(flags.input_dir_LR, _) for _ in image_list_lr_temp if _.split('.')[-1] == 'png']
+
+    def preprocess_test(name, mode):
+        im = sic.imread(name).astype(np.float32)
+        if im.shape[-1] != 3:
+            h, w = im.shape
+            temp = np.empty((h, w, 3), dtype=np.uint8)
+            temp[:, :, :] = im[:, :, np.newaxis]
+            im = temp.copy()
+        if mode == 'LR':
+            im = im / np.max(im)
+        elif mode == 'HR':
+            im = im / np.max(im)
+            im = im * 2 - 1
+
+        return im
+
+    image_lr = [preprocess_test(_, 'LR') for _ in image_list_lr]
+
+    data = collections.namedtuple('data', 'paths_LR, inputs')
+
+    return data(paths_LR=image_list_lr,
+                inputs=image_lr)
 
 
 def save_image(fetches, flags, step=None):
