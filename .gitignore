@@ -102,3 +102,6 @@ ENV/
 
 # pyCharm project settings
 .idea/
+
+# project settings
+data/
