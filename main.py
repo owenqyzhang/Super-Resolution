@@ -280,8 +280,8 @@ elif FLAGS.mode == 'train':
     with sv.managed_session(config=config) as sess:
         if FLAGS.checkpoint is not None and FLAGS.pre_trained_model is False:
             print('Loading model from checkpoint...')
-            checkpoint = tf.train.latest_checkpoint(FLAGS.checkpoint)
-            saver.restore(sess, checkpoint)
+            # checkpoint = tf.train.latest_checkpoint(FLAGS.checkpoint_dir)
+            saver.restore(sess, FLAGS.checkpoint)
         elif FLAGS.checkpoint is not None and FLAGS.pre_trained_model is True:
             print('Loading weights from pre trained model')
             weight_initializer.restore(sess, FLAGS.checkpoint)
