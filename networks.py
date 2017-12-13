@@ -10,20 +10,20 @@ def SRResNet(inputs, targets, flags):
     # generator
     with tf.variable_scope('generator'):
         output_channel = targets.get_shape().as_list()[-1]
-        gen_output = generator_SRResNet(inputs, output_channel, reuse=False, flags=flags)
+        gen_output = generator_SRResNet(inputs, output_channel, reuse=tf.AUTO_REUSE, flags=flags)
         gen_output.set_shape([flags.batch_size, flags.crop_size * 4, flags.crop_size * 4, 3])
 
     # loss
     if flags.perceptual_mode == 'VGG54':
         with tf.variable_scope('vgg19_1') as scope:
-            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=False, scope=scope)
+            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
-            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=True, scope=scope)
+            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
     elif flags.perceptual_mode == 'VGG22':
         with tf.variable_scope('vgg19_1') as scope:
-            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=False, scope=scope)
+            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
-            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=True, scope=scope)
+            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
     elif flags.perceptual_mode == 'MSE':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
@@ -72,20 +72,20 @@ def EDSR(inputs, targets, flags):
     # generator
     with tf.variable_scope('generator'):
         output_channel = targets.get_shape().as_list()[-1]
-        gen_output = generator_EDSR(inputs, output_channel, reuse=False, flags=flags)
+        gen_output = generator_EDSR(inputs, output_channel, reuse=tf.AUTO_REUSE, flags=flags)
         gen_output.set_shape([flags.batch_size, flags.crop_size * 4, flags.crop_size * 4, 3])
 
     # loss
     if flags.perceptual_mode == 'VGG54':
         with tf.variable_scope('vgg19_1') as scope:
-            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=False, scope=scope)
+            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
-            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=True, scope=scope)
+            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
     elif flags.perceptual_mode == 'VGG22':
         with tf.variable_scope('vgg19_1') as scope:
-            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=False, scope=scope)
+            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
-            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=True, scope=scope)
+            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
     elif flags.perceptual_mode == 'MSE':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
@@ -133,28 +133,28 @@ def SRGAN(inputs, targets, flags):
     # generator
     with tf.variable_scope('generator'):
         output_channel = targets.get_shape().as_list()[-1]
-        gen_output = generator_SRResNet(inputs, output_channel, reuse=False, flags=flags)
+        gen_output = generator_SRResNet(inputs, output_channel, reuse=tf.AUTO_REUSE, flags=flags)
         gen_output.set_shape([flags.batch_size, flags.crop_size * 4, flags.crop_size * 4, 3])
 
     with tf.variable_scope('fake_discriminator'):
-        with tf.variable_scope('discriminator', reuse=False):
+        with tf.variable_scope('discriminator', reuse=tf.AUTO_REUSE):
             disc_fake_output = discriminator(gen_output, flags=flags)
 
     with tf.variable_scope('real_discriminator'):
-        with tf.variable_scope('discriminator', reuse=True):
+        with tf.variable_scope('discriminator', reuse=tf.AUTO_REUSE):
             disc_real_output = discriminator(targets, flags=flags)
 
     # loss
     if flags.perceptual_mode == 'VGG54':
         with tf.variable_scope('vgg19_1') as scope:
-            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=False, scope=scope)
+            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
-            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=True, scope=scope)
+            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
     elif flags.perceptual_mode == 'VGG22':
         with tf.variable_scope('vgg19_1') as scope:
-            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=False, scope=scope)
+            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
-            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=True, scope=scope)
+            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
     elif flags.perceptual_mode == 'MSE':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
@@ -224,28 +224,28 @@ def EDSRGAN(inputs, targets, flags):
     # generator
     with tf.variable_scope('generator'):
         output_channel = targets.get_shape().as_list()[-1]
-        gen_output = generator_EDSR(inputs, output_channel, reuse=False, flags=flags)
+        gen_output = generator_EDSR(inputs, output_channel, reuse=tf.AUTO_REUSE, flags=flags)
         gen_output.set_shape([flags.batch_size, flags.crop_size * 4, flags.crop_size * 4, 3])
 
     with tf.variable_scope('fake_discriminator'):
-        with tf.variable_scope('discriminator', reuse=False):
+        with tf.variable_scope('discriminator', reuse=tf.AUTO_REUSE):
             disc_fake_output = discriminator(gen_output, flags=flags)
 
     with tf.variable_scope('real_discriminator'):
-        with tf.variable_scope('discriminator', reuse=True):
+        with tf.variable_scope('discriminator', reuse=tf.AUTO_REUSE):
             disc_real_output = discriminator(targets, flags=flags)
 
     # loss
     if flags.perceptual_mode == 'VGG54':
         with tf.variable_scope('vgg19_1') as scope:
-            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=False, scope=scope)
+            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
-            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=True, scope=scope)
+            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
     elif flags.perceptual_mode == 'VGG22':
         with tf.variable_scope('vgg19_1') as scope:
-            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=False, scope=scope)
+            ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
-            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=True, scope=scope)
+            ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
     elif flags.perceptual_mode == 'MSE':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
