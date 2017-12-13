@@ -105,3 +105,4 @@ ENV/
 
 # project settings
 data/
+experiment_*
