@@ -17,7 +17,8 @@ TensorLayer implementation of DCGAN to generate face image.
 Usage : see README.md
 """
 flags = tf.app.flags
-flags.DEFINE_integer("epoch", 3000, "Epoch to train [25]")
+flags.DEFINE_string("main_directory","/home/rachit/datasets","Main directory where the datasets are stored")
+flags.DEFINE_integer("epoch", 2, "Epoch to train [25]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
@@ -28,9 +29,10 @@ flags.DEFINE_integer("sample_size", 64, "The number of sample images [64]")
 flags.DEFINE_integer("c_dim", 3, "Dimension of image color. [3]")
 flags.DEFINE_integer("sample_step", 500, "The interval of generating sample. [500]")
 flags.DEFINE_integer("save_step", 500, "The interval of saveing checkpoints. [500]")
-flags.DEFINE_string("dataset", "cufs/imgs", "The name of dataset [celebA, mnist, lsun]")
+flags.DEFINE_string("dataset", "celeba/imgs", "The name of dataset [celebA, mnist, lsun]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
+flags.DEFINE_string("GAN_type","DC","Type of GAN you want to run")
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", True, "True for visualizing, False for nothing [False]")
@@ -59,24 +61,26 @@ def main(_):
         net_g2, g2_logits = generator_simplified_api(z, is_train=False, reuse=True)
 
         ##========================= DEFINE TRAIN OPS =======================##
-        # cost for updating discriminator and generator
-        # discriminator: real images are labelled as 1
-        d_loss_real = tl.cost.sigmoid_cross_entropy(d2_logits, tf.ones_like(d2_logits), name='dreal')
-        # discriminator: images from generator (fake) are labelled as 0
-        d_loss_fake = tl.cost.sigmoid_cross_entropy(d_logits, tf.zeros_like(d_logits), name='dfake')
-        d_loss = d_loss_real + d_loss_fake
-        # generator: try to make the the fake images look real (1)
-        g_loss = tl.cost.sigmoid_cross_entropy(d_logits, tf.ones_like(d_logits), name='gfake')
+        if FLAGS.GAN_type == 'DC':
+            # cost for updating discriminator and generator
+            # discriminator: real images are labelled as 1
+            d_loss_real = tl.cost.sigmoid_cross_entropy(d2_logits, tf.ones_like(d2_logits), name='dreal')
+            # discriminator: images from generator (fake) are labelled as 0
+            d_loss_fake = tl.cost.sigmoid_cross_entropy(d_logits, tf.zeros_like(d_logits), name='dfake')
+            d_loss = d_loss_real + d_loss_fake
+            # generator: try to make the the fake images look real (1)
+            g_loss = tl.cost.sigmoid_cross_entropy(d_logits, tf.ones_like(d_logits), name='gfake')
 
         ##==========================LSGAN===================================##
-        # # cost for updating discriminator and generator
-        # # discriminator: real images are labelled as 1
-        # d_loss_real = tf.reduce_mean(tf.square(d2_logits-tf.ones_like(d2_logits)), name='dreal')
-        # # discriminator: images from generator (fake) are labelled as 0
-        # d_loss_fake = tf.reduce_mean(tf.square(d_logits), name='dfake')
-        # d_loss = d_loss_real + d_loss_fake
-        # # generator: try to make the the fake images look real (1)
-        # g_loss = tf.reduce_mean(tf.square(d_logits-tf.ones_like(d_logits)), name='gfake')
+        elif FLAGS.GAN_type == 'LS':
+            # cost for updating discriminator and generator
+            # discriminator: real images are labelled as 1
+            d_loss_real = tf.reduce_mean(tf.square(d2_logits-tf.ones_like(d2_logits)), name='dreal')
+            # discriminator: images from generator (fake) are labelled as 0
+            d_loss_fake = tf.reduce_mean(tf.square(d_logits), name='dfake')
+            d_loss = d_loss_real + d_loss_fake
+            # generator: try to make the the fake images look real (1)
+            g_loss = tf.reduce_mean(tf.square(d_logits-tf.ones_like(d_logits)), name='gfake')
 
         g_vars = tl.layers.get_variables_with_name('generator', True, True)
         d_vars = tl.layers.get_variables_with_name('discriminator', True, True)
@@ -102,7 +106,7 @@ def main(_):
     net_g_name = os.path.join(save_dir, 'net_g.npz')
     net_d_name = os.path.join(save_dir, 'net_d.npz')
 
-    data_files = glob(os.path.join("/home/rachit/datasets", FLAGS.dataset, "*.png"))
+    data_files = glob(os.path.join(FLAGS.main_directory, FLAGS.dataset, "*.png"))
 
     sample_seed = np.random.normal(loc=0.0, scale=1.0, size=(FLAGS.sample_size, z_dim)).astype(np.float32)# sample_seed = np.random.uniform(low=-1, high=1, size=(FLAGS.sample_size, z_dim)).astype(np.float32)
 

@@ -21,6 +21,7 @@ Tensorlayer implementation of VAE
 '''
 
 flags = tf.app.flags
+flags.DEFINE_string("main_directory","/home/rachit/datasets","Main directory where the datasets are stored")
 flags.DEFINE_integer("epoch", 3000, "Epoch to train [5]")
 flags.DEFINE_float("learning_rate", 0.001, "Learning rate of for adam [0.001]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
@@ -34,8 +35,8 @@ flags.DEFINE_integer("c_dim", 3, "Dimension of image color. [3]")
 flags.DEFINE_integer("z_dim", 64, "Dimension of latent representation vector from. [2048]")
 flags.DEFINE_integer("sample_step", 1000, "The interval of generating sample. [300]")
 flags.DEFINE_integer("save_step", 1000, "The interval of saveing checkpoints. [500]")
-flags.DEFINE_string("dataset", "cufs/imgs", "The name of dataset [celebA]")
-flags.DEFINE_string("test_number", "vae_0808", "The number of experiment [test2]")
+flags.DEFINE_string("dataset", "celeba/imgs", "The name of dataset [celebA]")
+flags.DEFINE_string("test_number", "celeba_sample", "The number of experiment [test2]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
 flags.DEFINE_boolean("is_train", True, "True for training, False for testing [False]")
@@ -113,9 +114,9 @@ def main(_):
     tl.layers.initialize_global_variables(sess)
 
     # prepare file under checkpoint_dir
-    model_dir = "vae_0808"
+    model_dir = FLAGS.test_number
     #  there can be many models under one checkpoine file
-    save_dir = os.path.join(FLAGS.checkpoint_dir, model_dir) #'./checkpoint/vae_0808'
+    save_dir = os.path.join(FLAGS.checkpoint_dir, model_dir)
     tl.files.exists_or_mkdir(save_dir)
     # under current directory
     samples_1 = FLAGS.sample_dir + "/" + FLAGS.test_number
@@ -134,7 +135,7 @@ def main(_):
         gen0.print_params(True)
 
     # get the list of absolute paths of all images in dataset
-    data_files = glob(os.path.join("/home/rachit/datasets", FLAGS.dataset, "*.png"))
+    data_files = glob(os.path.join(FLAGS.main_directory, FLAGS.dataset, "*.png"))
     data_files = sorted(data_files)
     data_files = np.array(data_files) # for tl.iterate.minibatches
 #    print(glob(os.path.join("/home/rachit/datasets", FLAGS.dataset, "*.png")))

@@ -11,7 +11,10 @@ def encoder(input_imgs, is_train = True, reuse = False):
     input_imgs: the input images to be encoded into a vector as latent representation. size here is [b_size,64,64,3]
     '''
     z_dim = FLAGS.z_dim # 512
-    ef_dim = 4 # encoder filter number
+    if FLAGS.dataset == "celeba/imgs":
+        ef_dim = 16 # encoder filter number
+    elif FLAGS.dataset == "cufs/imgs":
+        ef_dim = 4
 
     w_init = tf.random_normal_initializer(stddev=0.02)
     gamma_init = tf.random_normal_initializer(1., 0.02)
@@ -56,7 +59,17 @@ def encoder(input_imgs, is_train = True, reuse = False):
         #         W_init = w_init, name='en/h4/lin_sigmoid')
         z_mean = net_out1.outputs # (b_size,512)
 
-    return net_out1, z_mean
+        # log of variance of z(covariance matrix is diagonal)
+        net_h5 = FlattenLayer(net_h3, name='en/h5/flatten')
+        net_out2 = DenseLayer(net_h5, n_units=z_dim, act=tf.identity,
+                W_init = w_init, name='en/h4/lin_sigmoid')
+        net_out2 = BatchNormLayer(net_out2, act=tf.nn.softplus,
+                is_train=is_train, gamma_init=gamma_init, name='en/out2/batch_norm')
+        # net_out2 = DenseLayer(net_h5, n_units=z_dim, act=tf.nn.relu,
+        #         W_init = w_init, name='en/h5/lin_sigmoid')
+        z_log_sigma_sq = net_out2.outputs + 1e-6# (b_size,512)
+
+    return net_out1, net_out2, z_mean, z_log_sigma_sq
 
 def generator(inputs, is_train = True, reuse = False):
     '''
@@ -65,7 +78,10 @@ def generator(inputs, is_train = True, reuse = False):
     '''
     image_size = FLAGS.output_size # 64 the output size of generator
     s2, s4, s8, s16 = int(image_size/2), int(image_size/4), int(image_size/8), int(image_size/16) # 32,16,8,4
-    gf_dim = 4
+    if FLAGS.dataset == "celeba/imgs":
+        gf_dim = 16 # encoder filter number
+    elif FLAGS.dataset == "cufs/imgs":
+        gf_dim = 4
     c_dim = FLAGS.c_dim # n_color 3
     batch_size = FLAGS.batch_size # 64
 
