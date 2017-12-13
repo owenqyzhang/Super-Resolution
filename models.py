@@ -103,6 +103,7 @@ def discriminator(dis_inputs, flags=None):
 
         with tf.variable_scope('dense_layer_2'):
             x1 = dense(x1, 1, flags.is_training)
+            x1 = tf.nn.sigmoid(x1)
 
     return x1
 
