@@ -24,5 +24,4 @@ python main.py \
 --stair True \
 --beta 0.9 \
 --max_iter 1000000 \
---save_freq 20000 \
---checkpoint ./experiment_EDSR/model-520000
+--save_freq 20000

@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 CUDA_VISIBLE_DEVICES=0 \
 python main.py \
---output_dir ./experiment_SRResNet/ \
---summary_dir ./experiment_SRResNet/log/ \
+--output_dir ./experiment_ensemble_VGG54/ \
+--summary_dir ./experiment_ensemble_VGG54/log/ \
 --mode train \
 --is_training True \
---task SRResNet \
+--task ensemble \
 --batch_size 16 \
 --flip True \
 --random_crop True \
@@ -15,7 +15,7 @@ python main.py \
 --num_resblock 16 \
 --name_queue_capacity 4096 \
 --image_queue_capacity 4096 \
---perceptual_mode MSE \
+--perceptual_mode VGG54 \
 --queue_thread 16 \
 --ratio 0.001 \
 --learning_rate 0.0001 \
@@ -23,6 +23,7 @@ python main.py \
 --decay_rate 0.1 \
 --stair True \
 --beta 0.9 \
---max_iter 1000000 \
+--max_iter 100000 \
 --save_freq 20000 \
---checkpoint ./experiment_SRResnet/model-140000
+--checkpoint_EDSR ./experiment_EDSR/model-1000000 \
+--checkpoint_SRResNet ./experiment_SRResNet/model-1000000

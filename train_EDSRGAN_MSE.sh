@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 CUDA_VISIBLE_DEVICES=0 \
 python main.py \
---output_dir ./experiment_SRResNet/ \
---summary_dir ./experiment_SRResNet/log/ \
+--output_dir ./experiment_EDSRGAN_MSE/ \
+--summary_dir ./experiment_EDSRGAN_MSE/log/ \
 --mode train \
 --is_training True \
---task SRResNet \
+--task EDSRGAN \
 --batch_size 16 \
 --flip True \
 --random_crop True \
@@ -19,10 +19,12 @@ python main.py \
 --queue_thread 16 \
 --ratio 0.001 \
 --learning_rate 0.0001 \
---decay_step 500000 \
+--decay_step 250000 \
 --decay_rate 0.1 \
 --stair True \
 --beta 0.9 \
---max_iter 1000000 \
---save_freq 20000 \
---checkpoint ./experiment_SRResnet/model-140000
+--max_iter 500000 \
+--vgg_scaling 0.0061 \
+--pre_trained_model True \
+--pre_trained_model_type EDSR \
+--checkpoint_EDSR ./experiment_EDSR/model-1000000

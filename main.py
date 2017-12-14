@@ -5,15 +5,20 @@ import time
 Flags = tf.app.flags
 
 # System parameters
-Flags.DEFINE_string('output_dir', './experiment_EDSR/', 'The output directory of the checkpoint.')
-Flags.DEFINE_string('summary_dir', './experiment_EDSR/log/', 'The directory to store the summaries.')
+Flags.DEFINE_string('output_dir', None, 'The output directory of the checkpoint.')
+Flags.DEFINE_string('summary_dir', None, 'The directory to store the summaries.')
 Flags.DEFINE_string('mode', 'train', 'Mode for running: train, test, or inference.')
-Flags.DEFINE_string('checkpoint', './experiment_EDSR/model-520000', 'If provided, the weights will be restored from the provided checkpoint.')
+Flags.DEFINE_string('checkpoint_SRResNet', None, 'If provided, the weights will be'
+                                                 'restored from the provided checkpoint.')
+Flags.DEFINE_string('checkpoint_EDSR', None, 'If provided, the weights will be restored'
+                                             'from the provided checkpoint.')
+Flags.DEFINE_string('checkpoint_ensemble', None, 'If provided,'
+                                                 'the weights will be restored from the provided checkpoint.')
 Flags.DEFINE_boolean('pre_trained_model', False, 'If set True, the weight will be loaded but the global steps will'
                                                  'still start from 0. If set False, global steps will be restored as'
                                                  'well.')
-Flags.DEFINE_string('pre_trained_model_type', 'EDSR', 'The type of pretrained model (SRResNet, EDSR, ensemble,'
-                                                          'SRGAN, or EDSRGAN).')
+Flags.DEFINE_string('pre_trained_model_type', None, 'The type of pretrained model (SRResNet, EDSR, ensemble,'
+                                                    'SRGAN, or EDSRGAN).')
 Flags.DEFINE_boolean('is_training', True, 'Training => True, Testing, Inference => False')
 Flags.DEFINE_string('vgg_ckpt', './vgg19/vgg_19.ckpt', 'Path to vgg19 checkpoint.')
 Flags.DEFINE_string('task', 'EDSR', 'SRResNet, EDSR, ensemble, SRGAN or EDSRGAN')
@@ -27,7 +32,7 @@ Flags.DEFINE_boolean('random_crop', True, 'Random crop data augmentation.')
 Flags.DEFINE_integer('crop_size', 24, 'Crop size of the training image.')
 Flags.DEFINE_integer('name_queue_capacity', 4096, 'The capacity of the filename queue.')
 Flags.DEFINE_integer('image_queue_capacity', 4096, 'The capacity of the image queue.')
-Flags.DEFINE_integer('queue_thread', 32, 'The threads of the queue.')
+Flags.DEFINE_integer('queue_thread', 8, 'The threads of the queue.')
 
 # Generator configurations
 Flags.DEFINE_integer('num_resblocks', 16, 'Number of residual blocks in the generator.')
@@ -64,8 +69,15 @@ if not os.path.exists(FLAGS.summary_dir):
     os.mkdir(FLAGS.summary_dir)
 
 if FLAGS.mode == 'test':
-    if FLAGS.checkpoint is None:
-        raise ValueError('the checkpoint not provided.')
+    if FLAGS.task in ['SRGAN', 'SRResNet']:
+        if FLAGS.checkpoint_SRResNet is None:
+            raise ValueError('the checkpoint not provided.')
+    if FLAGS.task in ['EDSRGAN', 'EDSR']:
+        if FLAGS.checkpoint_EDSR is None:
+            raise ValueError('the checkpoint not provided.')
+    if FLAGS.task == 'ensemble':
+        if FLAGS.checkpoint_SRResNet is None or FLAGS.checkpoint_EDSR is None or FLAGS.checkpoint_ensemble is None:
+            raise ValueError('the checkpoint not provided.')
 
     if FLAGS.flip:
         FLAGS.flip = False
@@ -85,6 +97,10 @@ if FLAGS.mode == 'test':
             gen_output = generator_SRResNet(inputs_raw, 3, reuse=False, flags=FLAGS)
         elif FLAGS.task == 'EDSR' or FLAGS.task == 'EDSRGAN':
             gen_output = generator_EDSR(inputs_raw, 3, reuse=False, flags=FLAGS)
+        elif FLAGS.task == 'ensemble':
+            gen_output_SRGAN = generator_SRResNet(inputs_raw, 3, reuse=False, flags=FLAGS)
+            gen_output_EDSR = generator_EDSR(inputs_raw, 3, reuse=False, flags=FLAGS)
+            gen_output = ensemble_net(gen_output_SRGAN, gen_output_EDSR, flags=FLAGS)
         else:
             raise NotImplementedError('Unknown task!!')
 
@@ -108,8 +124,21 @@ if FLAGS.mode == 'test':
             'targets': tf.map_fn(tf.image.encode_png, converted_targets, dtype=tf.string, name='target_pngs')
         }
 
-    var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator')
-    weight_initializer = tf.train.Saver(var_list)
+    if FLAGS.task in ['SRGAN', 'SRResNet']:
+        var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator')
+        weight_initializer = tf.train.Saver(var_list)
+    if FLAGS.task in ['EDSRGAN', 'EDSR']:
+        var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator')
+        weight_initializer = tf.train.Saver(var_list)
+    if FLAGS.task == 'ensemble':
+        SRResNet_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator/SRResNet_generator_unit')
+        SRResNet_weight_initializer = tf.train.Saver(SRResNet_var_list)
+
+        EDSR_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator/EDSR_generator_unit')
+        EDSR_weight_initializer = tf.train.Saver(EDSR_var_list)
+
+        ensemble_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator/ensemble_net')
+        ensemble_weight_initializer = tf.train.Saver(ensemble_var_list)
 
     init_op = tf.global_variables_initializer()
 
@@ -117,7 +146,14 @@ if FLAGS.mode == 'test':
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         print('Loading weights from pre-trained model')
-        weight_initializer.restore(sess, FLAGS.checkpoint)
+        if FLAGS.task in ['SRResNet', 'SRGAN']:
+            weight_initializer.restore(sess, FLAGS.checkpoint_SRResNet)
+        elif FLAGS.task in ['EDSR', 'EDSRGAN']:
+            weight_initializer.restore(sess, FLAGS.checkpoint_EDSR)
+        else:
+            SRResNet_weight_initializer.restore(sess, FLAGS.checkpoint_SRResNet)
+            EDSR_weight_initializer.restore(sess, FLAGS.checkpoint_EDSR)
+            ensemble_weight_initializer.restore(sess, FLAGS.checkpoin_ensemble)
 
         max_iter = len(test_data.inputs)
         print('Evaluation starts')
@@ -133,8 +169,15 @@ if FLAGS.mode == 'test':
                 print('evaluate image', f['name'])
 
 elif FLAGS.mode == 'inference':
-    if FLAGS.checkpoint is None:
-        raise ValueError('the checkpoint not provided.')
+    if FLAGS.task in ['SRGAN', 'SRResNet']:
+        if FLAGS.checkpoint_SRResNet is None:
+            raise ValueError('the checkpoint not provided.')
+    if FLAGS.task in ['EDSRGAN', 'EDSR']:
+        if FLAGS.checkpoint_EDSR is None:
+            raise ValueError('the checkpoint not provided.')
+    if FLAGS.task == 'ensemble':
+        if FLAGS.checkpoint_SRResNet is None or FLAGS.checkpoint_EDSR is None or FLAGS.checkpoint_ensemble is None:
+            raise ValueError('the checkpoint not provided.')
 
     if FLAGS.flip:
         FLAGS.flip = False
@@ -152,6 +195,10 @@ elif FLAGS.mode == 'inference':
             gen_output = generator_SRResNet(inputs_raw, 3, reuse=False, flags=FLAGS)
         elif FLAGS.task == 'EDSR' or FLAGS.task == 'EDSRGAN':
             gen_output = generator_EDSR(inputs_raw, 3, reuse=False, flags=FLAGS)
+        elif FLAGS.task == 'ensemble':
+            gen_output_SRGAN = generator_SRResNet(inputs_raw, 3, reuse=False, flags=FLAGS)
+            gen_output_EDSR = generator_EDSR(inputs_raw, 3, reuse=False, flags=FLAGS)
+            gen_output = ensemble_net(gen_output_SRGAN, gen_output_EDSR, flags=FLAGS)
         else:
             raise NotImplementedError('Unknown task!!')
 
@@ -171,8 +218,21 @@ elif FLAGS.mode == 'inference':
             'outputs': tf.map_fn(tf.image.encode_png, converted_outputs, dtype=tf.string, name='output_pngs')
         }
 
-    var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator')
-    weight_initializer = tf.train.Saver(var_list)
+    if FLAGS.task in ['SRGAN', 'SRResNet']:
+        var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator')
+        weight_initializer = tf.train.Saver(var_list)
+    if FLAGS.task in ['EDSRGAN', 'EDSR']:
+        var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator')
+        weight_initializer = tf.train.Saver(var_list)
+    if FLAGS.task == 'ensemble':
+        SRResNet_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator/SRResNet_generator_unit')
+        SRResNet_weight_initializer = tf.train.Saver(SRResNet_var_list)
+
+        EDSR_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator/EDSR_generator_unit')
+        EDSR_weight_initializer = tf.train.Saver(EDSR_var_list)
+
+        ensemble_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator/ensemble_net')
+        ensemble_weight_initializer = tf.train.Saver(ensemble_var_list)
 
     init_op = tf.global_variables_initializer()
 
@@ -180,7 +240,14 @@ elif FLAGS.mode == 'inference':
     config.gpu_options.allow_growth = True
     with tf.Session(config=config) as sess:
         print('Loading weights from pre-trained model')
-        weight_initializer.restore(sess, FLAGS.checkpoint)
+        if FLAGS.task in ['SRResNet', 'SRGAN']:
+            weight_initializer.restore(sess, FLAGS.checkpoint_SRResNet)
+        elif FLAGS.task in ['EDSR', 'EDSRGAN']:
+            weight_initializer.restore(sess, FLAGS.checkpoint_EDSR)
+        else:
+            SRResNet_weight_initializer.restore(sess, FLAGS.checkpoint_SRResNet)
+            EDSR_weight_initializer.restore(sess, FLAGS.checkpoint_EDSR)
+            ensemble_weight_initializer.restore(sess, FLAGS.checkpoin_ensemble)
 
         max_iter = len(test_data.inputs)
         print('Evaluation starts')
@@ -204,6 +271,11 @@ elif FLAGS.mode == 'train':
         net = SRGAN(data.inputs, data.targets, FLAGS)
     elif FLAGS.task == 'EDSRGAN':
         net = EDSRGAN(data.inputs, data.targets, FLAGS)
+    elif FLAGS.task == 'ensemble':
+        if FLAGS.checkpoint_SRResNet is None or FLAGS.checkpoint_EDSR is None:
+            raise ValueError('the checkpoint not provided.')
+
+        net = ensemble(data.inputs, data.targets, FLAGS)
     else:
         raise NotImplementedError('Unknown task type')
 
@@ -233,13 +305,12 @@ elif FLAGS.mode == 'train':
     if FLAGS.task == 'SRGAN' or FLAGS.task == 'EDSRGAN':
         tf.summary.scalar('discriminator_loss', net.disc_loss)
         tf.summary.scalar('adversarial_loss', net.adv_loss)
-        tf.summary.scalar('content_loss', net.content_loss)
-        tf.summary.scalar('generator_loss', net.content_loss + FLAGS.ratio * net.adv_loss)
+        tf.summary.scalar('content_loss', net.cont_loss)
+        tf.summary.scalar('generator_loss', net.cont_loss + FLAGS.ratio * net.adv_loss)
         tf.summary.scalar('PSNR', psnr)
         tf.summary.scalar('learning_rate', net.learning_rate)
-    elif FLAGS.task == 'SRResNet' or FLAGS.task == 'EDSR':
+    elif FLAGS.task == 'SRResNet' or FLAGS.task == 'EDSR' or FLAGS.task == 'ensemble':
         tf.summary.scalar('content_loss', net.content_loss)
-        # tf.summary.scalar('generator_loss', net.content_loss)
         tf.summary.scalar('PSNR', psnr)
         tf.summary.scalar('learning_rate', net.learning_rate)
 
@@ -266,6 +337,15 @@ elif FLAGS.mode == 'train':
         var_list2 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='generator')
     elif FLAGS.task == 'EDSR':
         var_list2 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='generator')
+    elif FLAGS.task == 'ensemble':
+        SRResNet_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES,
+                                              scope='generator/SRResNet_generator_unit')
+        SRResNet_weight_initializer = tf.train.Saver(SRResNet_var_list)
+
+        EDSR_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='generator/EDSR_generator_unit')
+        EDSR_weight_initializer = tf.train.Saver(EDSR_var_list)
+
+        var_list2 = tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope='ensemble')
 
     weight_initializer = tf.train.Saver(var_list2)
 
@@ -278,13 +358,33 @@ elif FLAGS.mode == 'train':
 
     sv = tf.train.Supervisor(logdir=FLAGS.summary_dir, save_summaries_secs=0, saver=None)
     with sv.managed_session(config=config) as sess:
-        if FLAGS.checkpoint is not None and FLAGS.pre_trained_model is False:
-            print('Loading model from checkpoint...')
-            # checkpoint = tf.train.latest_checkpoint(FLAGS.checkpoint_dir)
-            saver.restore(sess, FLAGS.checkpoint)
-        elif FLAGS.checkpoint is not None and FLAGS.pre_trained_model is True:
-            print('Loading weights from pre trained model')
-            weight_initializer.restore(sess, FLAGS.checkpoint)
+        if FLAGS.task in ['SRResNet', 'SRGAN']:
+            if FLAGS.checkpoint_SRResNet is not None and FLAGS.pre_trained_model is False:
+                print('Loading model from checkpoint...')
+                # checkpoint = tf.train.latest_checkpoint(FLAGS.checkpoint_SRResNet)
+                saver.restore(sess, FLAGS.checkpoint_SRResNet)
+            elif FLAGS.checkpoint_SRResNet is not None and FLAGS.pre_trained_model is True:
+                print('Loading weights from pre trained model')
+                weight_initializer.restore(sess, FLAGS.checkpoint_SRResNet)
+        elif FLAGS.task in ['EDSR', 'EDSRGAN']:
+            if FLAGS.checkpoint_EDSR is not None and FLAGS.pre_trained_model is False:
+                print('Loading model from checkpoint...')
+                # checkpoint = tf.train.latest_checkpoint(FLAGS.checkpoint_EDSR)
+                saver.restore(sess, FLAGS.checkpoint_EDSR)
+            elif FLAGS.checkpoint_EDSR is not None and FLAGS.pre_trained_model is True:
+                print('Loading weights from pre trained model')
+                weight_initializer.restore(sess, FLAGS.checkpoint_EDSR)
+        else:
+            SRResNet_weight_initializer.restore(sess, FLAGS.checkpoint_SRResNet)
+            EDSR_weight_initializer.restore(sess, FLAGS.checkpoint_EDSR)
+
+            if FLAGS.checkpoint_ensemble is not None and FLAGS.pre_trained_model is False:
+                print('Loading model from checkpoint...')
+                checkpoint = tf.train.latest_checkpoint(FLAGS.checkpoint_ensemble)
+                saver.restore(sess, checkpoint)
+            elif FLAGS.checkpoint_ensemble is not None and FLAGS.pre_trained_model is True:
+                print('Loading weights from pre trained model')
+                weight_initializer.restore(sess, FLAGS.checkpoint_ensemble)
 
         if not FLAGS.perceptual_mode == 'MSE':
             vgg_restore.restore(sess, FLAGS.vgg_ckpt)
@@ -300,14 +400,14 @@ elif FLAGS.mode == 'train':
 
         print('Optimization starts')
         start = time.time()
-        for step in range(1, max_iter):
+        for step in range(1, max_iter + 1):
             fetches = {'train': net.train, 'global_step': sv.global_step}
 
-            if ((step + 1) % FLAGS.display_freq) == 0:
+            if (step % FLAGS.display_freq) == 0 and step > 1:
                 if FLAGS.task == 'SRGAN' or FLAGS.task == 'EDSRGAN':
                     fetches['disc_loss'] = net.disc_loss
                     fetches['adv_loss'] = net.adv_loss
-                    fetches['content_loss'] = net.content_loss
+                    fetches['content_loss'] = net.cont_loss
                     fetches['PSNR'] = psnr
                     fetches['learning_rate'] = net.learning_rate
                     fetches['global_step'] = net.global_step
@@ -317,20 +417,21 @@ elif FLAGS.mode == 'train':
                     fetches['learning_rate'] = net.learning_rate
                     fetches['global_step'] = net.global_step
 
-            if ((step + 1) % FLAGS.summary_freq) == 0:
+            if (step % FLAGS.summary_freq) == 0 and step > 1:
                 fetches['summary'] = sv.summary_op
 
             results = sess.run(fetches)
+            step_temp = step
             step = results['global_step']
 
-            if ((step + 1) % FLAGS.summary_freq) == 0:
+            if (step % FLAGS.summary_freq) == 0 and step_temp > 1:
                 print('Recording summary')
                 sv.summary_writer.add_summary(results['summary'], results['global_step'])
 
-            if ((step + 1) % FLAGS.display_freq) == 0:
+            if (step % FLAGS.display_freq) == 0 and step_temp > 1:
                 train_epoch = math.ceil(results['global_step'] / data.steps_per_epoch)
                 train_step = (results['global_step'] - 1) % data.steps_per_epoch + 1
-                rate = (step + 1) * FLAGS.batch_size / (time.time() - start)
+                rate = step * FLAGS.batch_size / (time.time() - start)
                 remaining = (max_iter - step) * FLAGS.batch_size / rate
                 print("progress  epoch %d  step %d  image/sec %0.1f  remaining %dm" % (
                     train_epoch, train_step, rate, remaining / 60))
@@ -347,7 +448,7 @@ elif FLAGS.mode == 'train':
                     print("content_loss", results["content_loss"])
                     print("learning_rate", results['learning_rate'])
 
-            if ((step + 1) % FLAGS.save_freq) == 0:
+            if (step % FLAGS.save_freq) == 0 and step_temp > 1:
                 print('Save the checkpoint')
                 saver.save(sess, os.path.join(FLAGS.output_dir, 'model'), global_step=sv.global_step)
 
