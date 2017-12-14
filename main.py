@@ -442,7 +442,7 @@ elif FLAGS.mode == 'train':
                     print("adversarial_loss", results["adv_loss"])
                     print("content_loss", results["content_loss"])
                     print("learning_rate", results['learning_rate'])
-                elif FLAGS.task == 'SRResnet' or FLAGS.task == 'EDSR':
+                elif FLAGS.task == 'SRResNet' or FLAGS.task == 'EDSR':
                     print("global_step", results["global_step"])
                     print("PSNR", results["PSNR"])
                     print("content_loss", results["content_loss"])
