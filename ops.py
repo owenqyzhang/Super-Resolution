@@ -22,7 +22,7 @@ def conv(x, hidden_num=64, kernel_size=3, stride=1, w_decay=True):
 
 def dense(x, hidden_num, is_train):
     vs = tf.get_variable_scope()
-    in_channels = x.get_shape()[3]
+    in_channels = x.get_shape()[1]
     w = tf.get_variable('weights', [in_channels, hidden_num],
                         initializer=tf.contrib.layers.variance_scaling_initializer())
     x = tf.matmul(x, w)
@@ -175,7 +175,7 @@ def vgg_19(inputs, scope='vgg_19', reuse=False):
     with tf.variable_scope(scope, 'vgg_19', [inputs], reuse=reuse) as sc:
         end_points_collection = sc.name + '_end_points'
         with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
-                            output_collections=end_points_collection):
+                            outputs_collections=end_points_collection):
             x = slim.repeat(inputs, 2, slim.conv2d, 64, 3, scope='conv1', reuse=reuse)
             x = slim.max_pool2d(x, [2, 2], scope='pool1')
             x = slim.repeat(x, 2, slim.conv2d, 128, 3, scope='conv2', reuse=reuse)
