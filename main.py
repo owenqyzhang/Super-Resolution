@@ -115,13 +115,17 @@ if FLAGS.mode == 'test':
         converted_targets = tf.image.convert_image_dtype(targets, dtype=tf.uint8, saturate=True)
         converted_outputs = tf.image.convert_image_dtype(outputs, dtype=tf.uint8, saturate=True)
 
+    with tf.variable_scope('compute_psnr'):
+        psnr = compute_psnr(converted_targets, converted_outputs)
+
     with tf.variable_scope('encode_image'):
         save_fetch = {
             'path_LR': path_lr,
             'path_HR': path_hr,
             'inputs': tf.map_fn(tf.image.encode_png, converted_inputs, dtype=tf.string, name='input_pngs'),
             'outputs': tf.map_fn(tf.image.encode_png, converted_outputs, dtype=tf.string, name='output_pngs'),
-            'targets': tf.map_fn(tf.image.encode_png, converted_targets, dtype=tf.string, name='target_pngs')
+            'targets': tf.map_fn(tf.image.encode_png, converted_targets, dtype=tf.string, name='target_pngs'),
+            'PSNR': psnr
         }
 
     if FLAGS.task in ['SRGAN', 'SRResNet']:
@@ -166,7 +170,7 @@ if FLAGS.mode == 'test':
                                                       path_lr: path_lr_test, path_hr: path_hr_test})
             filesets = save_image(results, FLAGS)
             for j, f in enumerate(filesets):
-                print('evaluate image', f['name'])
+                print('evaluate image', f['name'], 'PSNR: ', results['PSNR'])
 
 elif FLAGS.mode == 'inference':
     if FLAGS.task in ['SRGAN', 'SRResNet']:
