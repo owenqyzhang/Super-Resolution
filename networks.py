@@ -43,7 +43,8 @@ def SRResNet(inputs, targets, flags):
 
     with tf.variable_scope('get_learning_rate_and_global_step'):
         global_step = tf.train.get_or_create_global_step()
-        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate)
+        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate,
+                                                   staircase=flags.stair)
         inc_global_step = tf.assign(global_step, global_step + 1)
 
     with tf.variable_scope('generator_train'):
@@ -105,7 +106,8 @@ def EDSR(inputs, targets, flags):
 
     with tf.variable_scope('get_learning_rate_and_global_step'):
         global_step = tf.train.get_or_create_global_step()
-        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate)
+        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate,
+                                                   staircase=flags.stair)
         inc_global_step = tf.assign(global_step, global_step + 1)
 
     with tf.variable_scope('generator_train'):
@@ -183,7 +185,8 @@ def SRGAN(inputs, targets, flags):
 
     with tf.variable_scope('get_learning_rate_and_global_step'):
         global_step = tf.train.get_or_create_global_step()
-        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate)
+        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate,
+                                                   staircase=flags.stair)
         inc_global_step = tf.assign(global_step, global_step + 1)
 
     with tf.variable_scope('discriminator_train'):
@@ -272,7 +275,8 @@ def EDSRGAN(inputs, targets, flags):
 
     with tf.variable_scope('get_learning_rate_and_global_step'):
         global_step = tf.train.get_or_create_global_step()
-        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate)
+        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate,
+                                                   staircase=flags.stair)
         inc_global_step = tf.assign(global_step, global_step + 1)
 
     with tf.variable_scope('discriminator_train'):
@@ -351,7 +355,8 @@ def ensemble(inputs, targets, flags):
 
     with tf.variable_scope('get_learning_rate_and_global_step'):
         global_step = tf.train.get_or_create_global_step()
-        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate)
+        learning_rate = tf.train.exponential_decay(flags.learning_rate, global_step, flags.decay_step, flags.decay_rate,
+                                                   staircase=flags.stair)
         inc_global_step = tf.assign(global_step, global_step + 1)
 
     with tf.variable_scope('generator_train'):
