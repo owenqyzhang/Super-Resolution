@@ -415,7 +415,7 @@ elif FLAGS.mode == 'train':
                     fetches['PSNR'] = psnr
                     fetches['learning_rate'] = net.learning_rate
                     fetches['global_step'] = net.global_step
-                elif FLAGS.task == 'SRResNet' or FLAGS.task == 'EDSR':
+                elif FLAGS.task == 'SRResNet' or FLAGS.task == 'EDSR' or FLAGS.task == 'ensemble':
                     fetches['content_loss'] = net.content_loss
                     fetches['PSNR'] = psnr
                     fetches['learning_rate'] = net.learning_rate
@@ -446,7 +446,7 @@ elif FLAGS.mode == 'train':
                     print("adversarial_loss", results["adv_loss"])
                     print("content_loss", results["content_loss"])
                     print("learning_rate", results['learning_rate'])
-                elif FLAGS.task == 'SRResNet' or FLAGS.task == 'EDSR':
+                elif FLAGS.task == 'SRResNet' or FLAGS.task == 'EDSR' or FLAGS.task == 'ensemble':
                     print("global_step", results["global_step"])
                     print("PSNR", results["PSNR"])
                     print("content_loss", results["content_loss"])
