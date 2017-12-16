@@ -24,7 +24,7 @@ def SRResNet(inputs, targets, flags):
             ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
             ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
-    elif flags.perceptual_mode == 'MSE':
+    elif flags.perceptual_mode == 'MSE' or flags.perceptual_mode == 'L1':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
     else:
@@ -36,6 +36,8 @@ def SRResNet(inputs, targets, flags):
             diff = ext_feat_gen - ext_feat_tar
             if flags.perceptual_mode == 'MSE':
                 content_loss = tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
+            elif flags.perceptual_mode == 'L1':
+                content_loss = tf.reduce_mean(tf.reduce_sum(tf.abs(diff), axis=[3]))
             else:
                 content_loss = flags.vgg_scaling * tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
 
@@ -87,7 +89,7 @@ def EDSR(inputs, targets, flags):
             ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.variable_scope('vgg19_2') as scope:
             ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
-    elif flags.perceptual_mode == 'MSE':
+    elif flags.perceptual_mode == 'MSE' or flags.perceptual_mode == 'L1':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
     else:
@@ -98,6 +100,8 @@ def EDSR(inputs, targets, flags):
             # L2 distance of features
             diff = ext_feat_gen - ext_feat_tar
             if flags.perceptual_mode == 'MSE':
+                content_loss = tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
+            elif flags.perceptual_mode == 'L1':
                 content_loss = tf.reduce_mean(tf.reduce_sum(tf.abs(diff), axis=[3]))
             else:
                 content_loss = flags.vgg_scaling * tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
@@ -157,7 +161,7 @@ def SRGAN(inputs, targets, flags):
             ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.name_scope('vgg19_2') as scope:
             ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
-    elif flags.perceptual_mode == 'MSE':
+    elif flags.perceptual_mode == 'MSE' or flags.perceptual_mode == 'L1':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
     else:
@@ -169,6 +173,8 @@ def SRGAN(inputs, targets, flags):
             diff = ext_feat_gen - ext_feat_tar
             if flags.perceptual_mode == 'MSE':
                 content_loss = tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
+            elif flags.perceptual_mode == 'L1':
+                content_loss = tf.reduce_mean(tf.reduce_sum(tf.abs(diff), axis=[3]))
             else:
                 content_loss = flags.vgg_scaling * tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
 
@@ -247,7 +253,7 @@ def EDSRGAN(inputs, targets, flags):
             ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.name_scope('vgg19_2') as scope:
             ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
-    elif flags.perceptual_mode == 'MSE':
+    elif flags.perceptual_mode == 'MSE' or flags.perceptual_mode == 'L1':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
     else:
@@ -259,6 +265,8 @@ def EDSRGAN(inputs, targets, flags):
             diff = ext_feat_gen - ext_feat_tar
             if flags.perceptual_mode == 'MSE':
                 content_loss = tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
+            elif flags.perceptual_mode == 'L1':
+                content_loss = tf.reduce_mean(tf.reduce_sum(tf.abs(diff), axis=[3]))
             else:
                 content_loss = flags.vgg_scaling * tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
 
@@ -336,7 +344,7 @@ def ensemble(inputs, targets, flags):
             ext_feat_gen = vgg19_slim(gen_output, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
         with tf.name_scope('vgg19_2') as scope:
             ext_feat_tar = vgg19_slim(targets, flags.perceptual_mode, reuse=tf.AUTO_REUSE, scope=scope)
-    elif flags.perceptual_mode == 'MSE':
+    elif flags.perceptual_mode == 'MSE' or flags.perceptual_mode == 'L1':
         ext_feat_gen = gen_output
         ext_feat_tar = targets
     else:
@@ -348,6 +356,8 @@ def ensemble(inputs, targets, flags):
             diff = ext_feat_gen - ext_feat_tar
             if flags.perceptual_mode == 'MSE':
                 content_loss = tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
+            elif flags.perceptual_mode == 'L1':
+                content_loss = tf.reduce_mean(tf.reduce_sum(tf.abs(diff), axis=[3]))
             else:
                 content_loss = flags.vgg_scaling * tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
 

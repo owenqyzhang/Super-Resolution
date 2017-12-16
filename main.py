@@ -63,10 +63,10 @@ if FLAGS.output_dir is None:
     raise ValueError('The output directory is needed.')
 
 if not os.path.exists(FLAGS.output_dir):
-    os.mkdir(FLAGS.output_dir)
+    os.makedirs(FLAGS.output_dir)
 
 if not os.path.exists(FLAGS.summary_dir):
-    os.mkdir(FLAGS.summary_dir)
+    os.makedirs(FLAGS.summary_dir)
 
 if FLAGS.mode == 'test':
     if FLAGS.task in ['SRGAN', 'SRResNet']:
@@ -353,7 +353,7 @@ elif FLAGS.mode == 'train':
 
     weight_initializer = tf.train.Saver(var_list2)
 
-    if not FLAGS.perceptual_mode == 'MSE':
+    if FLAGS.perceptual_mode not in ['MSE', 'L1']:
         vgg_var_list = tf.get_collection(tf.GraphKeys.GLOBAL_VARIABLES, scope='vgg_19')
         vgg_restore = tf.train.Saver(vgg_var_list)
 
@@ -390,7 +390,7 @@ elif FLAGS.mode == 'train':
                 print('Loading weights from pre trained model')
                 weight_initializer.restore(sess, FLAGS.checkpoint_ensemble)
 
-        if not FLAGS.perceptual_mode == 'MSE':
+        if FLAGS.perceptual_mode not in ['MSE', 'L1']:
             vgg_restore.restore(sess, FLAGS.vgg_ckpt)
             print('VGG19 restored successfully')
 

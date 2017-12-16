@@ -5,10 +5,10 @@ CUDA_VISIBLE_DEVICES=0 python main.py \
     --mode test \
     --is_training False \
     --task SRResNet \
-    --batch_size 16
+    --batch_size 16 \
     --input_dir_LR ./data/test_LR/ \
     --input_dir_HR ./data/test_HR/ \
     --num_resblocks 16 \
     --pre_trained_model True \
-    --checkpoint_EDSR ./experiment_SRResNet/model-1000000
+    --checkpoint_SRResNet ./experiment_SRResNet/model-1000000
 

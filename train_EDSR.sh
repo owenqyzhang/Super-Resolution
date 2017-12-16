@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=1 \
 python main.py \
 --output_dir ./experiment_EDSR/ \
 --summary_dir ./experiment_EDSR/log/ \
@@ -15,7 +15,7 @@ python main.py \
 --num_resblock 32 \
 --name_queue_capacity 4096 \
 --image_queue_capacity 4096 \
---perceptual_mode MSE \
+--perceptual_mode L1 \
 --queue_thread 16 \
 --ratio 0.001 \
 --learning_rate 0.0001 \
