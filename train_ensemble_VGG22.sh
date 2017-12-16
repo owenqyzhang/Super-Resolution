@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 CUDA_VISIBLE_DEVICES=0 \
 python main.py \
---output_dir ./experiment_ensemble_MSE/ \
---summary_dir ./experiment_ensemble_MSE/log/ \
+--output_dir ./experiment_ensemble_VGG22/ \
+--summary_dir ./experiment_ensemble_VGG22/log/ \
 --mode train \
 --is_training True \
 --task ensemble \
@@ -15,7 +15,7 @@ python main.py \
 --num_resblock 16 \
 --name_queue_capacity 4096 \
 --image_queue_capacity 4096 \
---perceptual_mode MSE \
+--perceptual_mode VGG22 \
 --queue_thread 16 \
 --ratio 0.001 \
 --learning_rate 0.0001 \
@@ -25,5 +25,7 @@ python main.py \
 --beta 0.9 \
 --max_iter 20000 \
 --save_freq 20000 \
+--pre_trained_model True \
 --checkpoint_EDSR ./experiment_EDSR/model-1000000 \
---checkpoint_SRResNet ./experiment_SRResNet/model-1000000
+--checkpoint_SRResNet ./experiment_SRResNet/model-1000000 \
+--checkpoint_ensemble ./experiment_ensemble_MSE/model-20000

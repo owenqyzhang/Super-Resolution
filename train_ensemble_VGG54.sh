@@ -23,7 +23,9 @@ python main.py \
 --decay_rate 0.1 \
 --stair True \
 --beta 0.9 \
---max_iter 100000 \
+--max_iter 20000 \
 --save_freq 20000 \
+--pre_trained_model True \
 --checkpoint_EDSR ./experiment_EDSR/model-1000000 \
---checkpoint_SRResNet ./experiment_SRResNet/model-1000000
+--checkpoint_SRResNet ./experiment_SRResNet/model-1000000 \
+--checkpoint_ensemble ./experiment_ensemble_MSE/model-20000
