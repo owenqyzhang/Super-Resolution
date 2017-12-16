@@ -97,7 +97,7 @@ def EDSR(inputs, targets, flags):
             # L2 distance of features
             diff = ext_feat_gen - ext_feat_tar
             if flags.perceptual_mode == 'MSE':
-                content_loss = tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
+                content_loss = tf.reduce_mean(tf.reduce_sum(tf.abs(diff), axis=[3]))
             else:
                 content_loss = flags.vgg_scaling * tf.reduce_mean(tf.reduce_sum(tf.square(diff), axis=[3]))
 

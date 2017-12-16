@@ -12,7 +12,7 @@ python main.py \
 --crop_size 24 \
 --input_dir_LR ./data/RAISE_LR/ \
 --input_dir_HR ./data/RAISE_HR/ \
---num_resblock 16 \
+--num_resblock 32 \
 --name_queue_capacity 4096 \
 --image_queue_capacity 4096 \
 --perceptual_mode MSE \

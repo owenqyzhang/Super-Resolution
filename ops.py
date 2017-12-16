@@ -43,7 +43,7 @@ def res_block(x, scope, flags, output_channel=64, stride=1):
     return x1
 
 
-def res_block_edsr(x, scope, output_channel=64, scale=1, stride=1):
+def res_block_edsr(x, scope, output_channel=256, scale=1, stride=1):
     with tf.variable_scope(scope):
         x1 = conv(x, output_channel, stride=stride)
         x1 = tf.nn.relu(x1)
