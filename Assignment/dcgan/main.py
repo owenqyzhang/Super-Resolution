@@ -1,4 +1,4 @@
-import os, sys, pprint, time
+    import os, sys, pprint, time
 import scipy.misc
 import numpy as np
 import tensorflow as tf
@@ -8,17 +8,13 @@ from glob import glob
 from random import shuffle
 from model import *
 from utils import *
+import matplotlib.pyplot as plt
 
 pp = pprint.PrettyPrinter()
 
-"""
-TensorLayer implementation of DCGAN to generate face image.
-
-Usage : see README.md
-"""
 flags = tf.app.flags
 flags.DEFINE_string("main_directory","/home/rachit/datasets","Main directory where the datasets are stored")
-flags.DEFINE_integer("epoch", 2, "Epoch to train [25]")
+flags.DEFINE_integer("epoch", 3000, "Epoch to train [25]")
 flags.DEFINE_float("learning_rate", 0.0002, "Learning rate of for adam [0.0002]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
@@ -29,10 +25,10 @@ flags.DEFINE_integer("sample_size", 64, "The number of sample images [64]")
 flags.DEFINE_integer("c_dim", 3, "Dimension of image color. [3]")
 flags.DEFINE_integer("sample_step", 500, "The interval of generating sample. [500]")
 flags.DEFINE_integer("save_step", 500, "The interval of saveing checkpoints. [500]")
-flags.DEFINE_string("dataset", "celeba/imgs", "The name of dataset [celebA, mnist, lsun]")
+flags.DEFINE_string("dataset", "cufs/imgs", "The name of dataset [celebA, mnist, lsun]")
 flags.DEFINE_string("checkpoint_dir", "checkpoint", "Directory name to save the checkpoints [checkpoint]")
 flags.DEFINE_string("sample_dir", "samples", "Directory name to save the image samples [samples]")
-flags.DEFINE_string("GAN_type","DC","Type of GAN you want to run")
+flags.DEFINE_string("GAN_type","LS","Type of GAN you want to run")
 flags.DEFINE_boolean("is_train", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("is_crop", False, "True for training, False for testing [False]")
 flags.DEFINE_boolean("visualize", True, "True for visualizing, False for nothing [False]")
@@ -112,6 +108,10 @@ def main(_):
 
     ##========================= TRAIN MODELS ================================##
     iter_counter = 0
+    d_loss_list = []
+    g_loss_list = []
+    iter_list = []
+
     for epoch in range(FLAGS.epoch):
         ## shuffle data
         shuffle(data_files)
@@ -123,6 +123,7 @@ def main(_):
         print("[*] Sample images updated!")
 
         ## load image data
+
         batch_idxs = min(len(data_files), FLAGS.train_size) // FLAGS.batch_size
 
         for idx in xrange(0, batch_idxs):
@@ -138,6 +139,26 @@ def main(_):
                 errD, _ = sess.run([d_loss, d_optim], feed_dict={z: batch_z, real_images: batch_images })
             # updates the generator, run generator twice to make sure that d_loss does not go to zero (difference from paper)
             errG, _ = sess.run([g_loss, g_optim], feed_dict={z: batch_z})
+
+            if np.mod(iter_counter, 50) == 0:
+                g_loss_list.append(errG)
+                d_loss_list.append(errD)
+                iter_list.append(iter_counter)
+
+                plt.figure()
+                plt.plot(iter_list, g_loss_list)
+                plt.xlabel('iteration')
+                plt.ylabel('generator loss')
+                plt.title('generator loss vs iterations')
+                plt.savefig('cufs_gen_loss.png')
+
+                plt.figure()
+                plt.plot(iter_list, d_loss_list)
+                plt.xlabel('iteration')
+                plt.ylabel('discriminator loss')
+                plt.title('discriminator loss vs iterations')
+                plt.savefig('cufs_dis_loss.png')
+
             print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, d_loss: %.8f, g_loss: %.8f" \
                     % (epoch, FLAGS.epoch, idx, batch_idxs, time.time() - start_time, errD, errG))
 

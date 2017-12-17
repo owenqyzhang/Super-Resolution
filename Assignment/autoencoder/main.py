@@ -12,13 +12,9 @@ from glob import glob
 from random import shuffle
 from model_ae import *
 from utils import *
-
+import matplotlib.pyplot as plt
 
 pp = pprint.PrettyPrinter()
-
-'''
-Tensorlayer implementation of AE
-'''
 
 flags = tf.app.flags
 flags.DEFINE_string("main_directory","/home/rachit/datasets","Main directory where the datasets are stored")
@@ -84,9 +80,7 @@ def main(_):
         SSE_loss = tf.reduce_mean(tf.square(gen0.outputs - input_imgs))# /FLAGS.output_size/FLAGS.output_size/3
 
         ### important points! ###
-        # the weight between style loss(KLD) and contend loss(pixel-wise mean square error)
-        # VAE_loss = SSE_loss
-        AE_loss =  SSE_loss # KL_loss isn't working well if the weight of SSE is too big
+        AE_loss =  SSE_loss
 
         e_vars = tl.layers.get_variables_with_name('encoder',True,True)
         g_vars = tl.layers.get_variables_with_name('generator', True, True)
@@ -106,9 +100,9 @@ def main(_):
     tl.layers.initialize_global_variables(sess)
 
     # prepare file under checkpoint_dir
-    model_dir = "ae_cufs"
+    model_dir = "ae_celeba"
     #  there can be many models under one checkpoine file
-    save_dir = os.path.join(FLAGS.checkpoint_dir, model_dir) #'./checkpoint/ae_cufs'
+    save_dir = os.path.join(FLAGS.checkpoint_dir, model_dir) #'./checkpoint/ae_celeba'
     tl.files.exists_or_mkdir(save_dir)
     # under current directory
     samples_1 = FLAGS.sample_dir + "/" + FLAGS.test_number
@@ -134,6 +128,8 @@ def main(_):
 
     ##========================= TRAIN MODELS ================================##
     iter_counter = 0
+    loss_list = []
+    iter_list = []
 
     training_start_time = time.time()
     # use all images in dataset in every epoch
@@ -159,6 +155,16 @@ def main(_):
                 # update
                 errE, _ = sess.run([AE_loss,ae_optim], feed_dict={input_imgs: batch_images, lr_ae:ae_current_lr})
 
+                if np.mod(iter_counter, 50) == 0:
+                    loss_list.append(errE)
+                    iter_list.append(iter_counter)
+
+                    plt.figure()
+                    plt.plot(iter_list, loss_list)
+                    plt.xlabel('iteration')
+                    plt.ylabel('autoencoder loss')
+                    plt.title('autoencoder loss vs iterations')
+                    plt.savefig('celeba_ae_loss.png')
 
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, ae_loss:%.8f" \
                         % (epoch, FLAGS.epoch, idx, batch_idxs,
@@ -217,7 +223,6 @@ def main(_):
 
     training_end_time = time.time()
     print("The processing time of program is : {:.2f}mins".format((training_end_time-training_start_time)/60.0))
-
 
 if __name__ == '__main__':
     tf.app.run()

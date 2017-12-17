@@ -95,11 +95,11 @@ def generator(inputs, is_train = True, reuse = False):
         net_h1 = DeConv2d(net_h0, gf_dim*8, (3,3), out_size=(s8, s8), strides=(2, 2),
                 padding='SAME', batch_size=batch_size, act=None, W_init=w_init, name='g/h1/decon2d')
         net_h1 = BatchNormLayer(net_h1, act=tf.nn.relu, is_train=is_train,
+                gamma_init=gamma_init, name='g/h1/batch_norm')
         # net_h1.outputs._shape = (b_size,8,8,32)
 
         net_h2 = DeConv2d(net_h1, gf_dim*4, (3,3), out_size=(s4, s4), strides=(2, 2),
                 padding='SAME', batch_size=batch_size, act=None, W_init=w_init, name='g/h2/decon2d')
-                gamma_init=gamma_init, name='g/h1/batch_norm')
         net_h2 = BatchNormLayer(net_h2, act=tf.nn.relu, is_train=is_train,
                 gamma_init=gamma_init, name='g/h2/batch_norm')
         # net_h2.outputs._shape = (b_size,16,16,16)

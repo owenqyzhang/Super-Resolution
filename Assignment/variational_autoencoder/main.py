@@ -12,17 +12,13 @@ from glob import glob
 from random import shuffle
 from model_vae import *
 from utils import *
-
+import matplotlib.pyplot as plt
 
 pp = pprint.PrettyPrinter()
 
-'''
-Tensorlayer implementation of VAE
-'''
-
 flags = tf.app.flags
 flags.DEFINE_string("main_directory","/home/rachit/datasets","Main directory where the datasets are stored")
-flags.DEFINE_integer("epoch", 3000, "Epoch to train [5]")
+flags.DEFINE_integer("epoch", 5, "Epoch to train [5]")
 flags.DEFINE_float("learning_rate", 0.001, "Learning rate of for adam [0.001]")
 flags.DEFINE_float("beta1", 0.5, "Momentum term of adam [0.5]")
 flags.DEFINE_integer("train_size", np.inf, "The size of train images [np.inf]")
@@ -142,6 +138,10 @@ def main(_):
 
     ##========================= TRAIN MODELS ================================##
     iter_counter = 0
+    kl_list = []
+    ml_list = []
+    loss_list = []
+    iter_list = []
 
     training_start_time = time.time()
     # use all images in dataset in every epoch
@@ -167,6 +167,32 @@ def main(_):
                 # update
                 kl, ml, errE, _ = sess.run([KL_loss,ML_loss,VAE_loss,vae_optim], feed_dict={input_imgs: batch_images, lr_vae:vae_current_lr})
 
+                if np.mod(iter_counter, 50) == 0:
+                    loss_list.append(errE)
+                    kl_list.append(kl)
+                    ml_list.append(ml)
+                    iter_list.append(iter_counter)
+
+                    plt.figure()
+                    plt.plot(iter_list, loss_list)
+                    plt.xlabel('iteration')
+                    plt.ylabel('variational autoencoder loss')
+                    plt.title('variational autoencoder loss vs iterations')
+                    plt.savefig('celeba_vae_loss.png')
+
+                    plt.figure()
+                    plt.plot(iter_list, kl_list)
+                    plt.xlabel('iteration')
+                    plt.ylabel('kl loss')
+                    plt.title('kl loss vs iterations')
+                    plt.savefig('celeba_kl_loss.png')
+
+                    plt.figure()
+                    plt.plot(iter_list, ml_list)
+                    plt.xlabel('iteration')
+                    plt.ylabel('ml loss')
+                    plt.title('ml loss vs iterations')
+                    plt.savefig('celeba_ml_loss.png')
 
                 print("Epoch: [%2d/%2d] [%4d/%4d] time: %4.4f, vae_loss:%.8f, kl_loss:%.8f, ml_loss:%.8f" \
                         % (epoch, FLAGS.epoch, idx, batch_idxs,
