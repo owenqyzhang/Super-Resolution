@@ -106,3 +106,4 @@ ENV/
 # project settings
 data/
 experiment_*
+vgg19/

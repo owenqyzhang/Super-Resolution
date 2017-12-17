@@ -108,11 +108,39 @@ def discriminator(dis_inputs, flags=None):
     return x1
 
 
+def ensemble_net(input_1, input_2, flags=None):
+    if flags is None:
+        raise ValueError('No FLAGS is provided for generator')
+
+    with tf.variable_scope('ensemble_net'):
+        with tf.variable_scope('input_stage'):
+            x = tf.concat([input_1, input_2], axis=3)
+
+        with tf.variable_scope('conv1'):
+            x = conv(x, hidden_num=8, kernel_size=3, stride=1)
+            x = tf.nn.relu(x)
+
+        with tf.variable_scope('conv2'):
+            x = conv(x, hidden_num=16, kernel_size=3, stride=1)
+            x = tf.nn.relu(x)
+
+        with tf.variable_scope('conv3'):
+            x = conv(x, hidden_num=32, kernel_size=3, stride=1)
+            x = tf.nn.relu(x)
+
+        with tf.variable_scope('conv4'):
+            x = conv(x, hidden_num=3, kernel_size=3, stride=1)
+
+    return x
+
+
 def vgg19_slim(inputs, loss_type, reuse, scope):
     if loss_type == 'VGG54':
-        target_layer = scope + 'vgg_19/conv5/conv5_4'
+        # target_layer = scope.name + '/vgg_19/conv5/conv5_4'
+        target_layer = 'vgg_19/conv5/conv5_4'
     elif loss_type == 'VGG22':
-        target_layer = scope + 'vgg_19/conv2/conv2_2'
+        # target_layer = scope.name + '/vgg_19/conv2/conv2_2'
+        target_layer = 'vgg_19/conv2/conv2_2'
     else:
         NotImplementedError('Unknown perceptual loss type')
     _, output = vgg_19(inputs, reuse=reuse)

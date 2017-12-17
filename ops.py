@@ -5,29 +5,31 @@ import numpy as np
 
 def conv(x, hidden_num=64, kernel_size=3, stride=1, w_decay=True):
     vs = tf.get_variable_scope()
-    in_channels = x.get_shape()[3]
-    if w_decay:
-        weight_decay = tf.constant(0.05, dtype=tf.float32)
-        w = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
-                            initializer=tf.contrib.layers.variance_scaling_initializer(),
-                            regularizer=tf.contrib.layers.l2_regularizer(weight_decay))
-    else:
-        w = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
-                            initializer=tf.contrib.layers.variance_scaling_initializer())
+    with tf.variable_scope(vs, reuse=tf.AUTO_REUSE):
+        in_channels = x.get_shape()[3]
+        if w_decay:
+            weight_decay = tf.constant(0.05, dtype=tf.float32)
+            w = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
+                                initializer=tf.contrib.layers.variance_scaling_initializer(),
+                                regularizer=tf.contrib.layers.l2_regularizer(weight_decay))
+        else:
+            w = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
+                                initializer=tf.contrib.layers.variance_scaling_initializer())
 
-    x = tf.nn.conv2d(x, w, strides=[1, stride, stride, 1], padding='SAME')
+        x = tf.nn.conv2d(x, w, strides=[1, stride, stride, 1], padding='SAME')
 
     return x
 
 
 def dense(x, hidden_num, is_train):
     vs = tf.get_variable_scope()
-    in_channels = x.get_shape()[3]
-    w = tf.get_variable('weights', [in_channels, hidden_num],
-                        initializer=tf.contrib.layers.variance_scaling_initializer())
-    x = tf.matmul(x, w)
-    x = batch_norm(x, is_train=is_train)
-    x = tf.nn.relu(x)
+    with tf.variable_scope(vs, tf.AUTO_REUSE):
+        in_channels = x.get_shape()[1]
+        w = tf.get_variable('weights', [in_channels, hidden_num],
+                            initializer=tf.contrib.layers.variance_scaling_initializer())
+        x = tf.matmul(x, w)
+        x = batch_norm(x, is_train=is_train)
+        x = tf.nn.relu(x)
     return x
 
 
@@ -43,7 +45,7 @@ def res_block(x, scope, flags, output_channel=64, stride=1):
     return x1
 
 
-def res_block_edsr(x, scope, output_channel=64, scale=1, stride=1):
+def res_block_edsr(x, scope, output_channel=256, scale=1, stride=1):
     with tf.variable_scope(scope):
         x1 = conv(x, output_channel, stride=stride)
         x1 = tf.nn.relu(x1)
@@ -78,31 +80,33 @@ def lrelu(x, alpha=0.3, name='LeakyReLU'):
 
 
 def batch_norm(x, is_train=True, decay=0.99, epsilon=0.001, name=''):
-    shape_x = x.get_shape().as_list()
-    beta = tf.get_variable('beta' + name, shape_x[-1], initializer=tf.constant_initializer(0.0))
-    gamma = tf.get_variable('gamma' + name, shape_x[-1], initializer=tf.constant_initializer(1.0))
-    moving_mean = tf.get_variable('moving_mean' + name, shape_x[-1],
-                                  initializer=tf.constant_initializer(0.0), trainable=False)
-    moving_var = tf.get_variable('moving_var' + name, shape_x[-1],
-                                 initializer=tf.constant_initializer(1.0), trainable=False)
+    vs = tf.get_variable_scope()
+    with tf.variable_scope(vs, reuse=tf.AUTO_REUSE):
+        shape_x = x.get_shape().as_list()
+        beta = tf.get_variable('beta' + name, shape_x[-1], initializer=tf.constant_initializer(0.0))
+        gamma = tf.get_variable('gamma' + name, shape_x[-1], initializer=tf.constant_initializer(1.0))
+        moving_mean = tf.get_variable('moving_mean' + name, shape_x[-1],
+                                      initializer=tf.constant_initializer(0.0), trainable=False)
+        moving_var = tf.get_variable('moving_var' + name, shape_x[-1],
+                                     initializer=tf.constant_initializer(1.0), trainable=False)
 
-    if is_train:
-        mean, var = tf.nn.moments(x, np.arange(len(shape_x) - 1), keep_dims=True)
-        mean = tf.reshape(mean, [mean.shape.as_list()[-1]])
-        var = tf.reshape(var, [var.shape.as_list()[-1]])
+        if is_train:
+            mean, var = tf.nn.moments(x, np.arange(len(shape_x) - 1), keep_dims=True)
+            mean = tf.reshape(mean, [mean.shape.as_list()[-1]])
+            var = tf.reshape(var, [var.shape.as_list()[-1]])
 
-        update_moving_mean = tf.assign(moving_mean, moving_mean * decay + mean * (1 - decay))
-        update_moving_var = tf.assign(moving_var,
-                                      moving_var * decay + shape_x[0] / (shape_x[0] - 1) * var * (1 - decay))
-        update_ops = [update_moving_mean, update_moving_var]
+            update_moving_mean = tf.assign(moving_mean, moving_mean * decay + mean * (1 - decay))
+            update_moving_var = tf.assign(moving_var,
+                                          moving_var * decay + shape_x[0] / (shape_x[0] - 1) * var * (1 - decay))
+            update_ops = [update_moving_mean, update_moving_var]
 
-        with tf.control_dependencies(update_ops):
+            with tf.control_dependencies(update_ops):
+                return tf.nn.batch_normalization(x, mean, var, beta, gamma, epsilon)
+
+        else:
+            mean = moving_mean
+            var = moving_var
             return tf.nn.batch_normalization(x, mean, var, beta, gamma, epsilon)
-
-    else:
-        mean = moving_mean
-        var = moving_var
-        return tf.nn.batch_normalization(x, mean, var, beta, gamma, epsilon)
 
 
 def pixel_shuffler(x, scale=2):
@@ -175,7 +179,7 @@ def vgg_19(inputs, scope='vgg_19', reuse=False):
     with tf.variable_scope(scope, 'vgg_19', [inputs], reuse=reuse) as sc:
         end_points_collection = sc.name + '_end_points'
         with slim.arg_scope([slim.conv2d, slim.fully_connected, slim.max_pool2d],
-                            output_collections=end_points_collection):
+                            outputs_collections=end_points_collection):
             x = slim.repeat(inputs, 2, slim.conv2d, 64, 3, scope='conv1', reuse=reuse)
             x = slim.max_pool2d(x, [2, 2], scope='pool1')
             x = slim.repeat(x, 2, slim.conv2d, 128, 3, scope='conv2', reuse=reuse)
