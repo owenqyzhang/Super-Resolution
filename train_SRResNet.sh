@@ -24,4 +24,6 @@ python main.py \
 --stair True \
 --beta 0.9 \
 --max_iter 1000000 \
---save_freq 20000
+--save_freq 20000 \
+--pre_trained_model False \
+--checkpoint_SRResNet ./experiment_SRResNet/model-500000

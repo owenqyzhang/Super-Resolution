@@ -27,4 +27,4 @@ python main.py \
 --vgg_scaling 0.0061 \
 --pre_trained_model True \
 --pre_trained_model_type SRGAN \
---checkpoint_SRResNet ./experiment_SRGAN_MSE/model-500000
+--checkpoint_SRResNet ./experiment_SRResNet/model-1000000

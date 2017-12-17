@@ -118,9 +118,12 @@ def data_loader(flags):
                 else:
                     input_images = tf.identity(inputs)
                     target_images = tf.identity(targets)
-
-            input_images.set_shape([flags.crop_size, flags.crop_size, 3])
-            target_images.set_shape([flags.crop_size * 4, flags.crop_size * 4, 3])
+            if flags.mode == 'train':
+                input_images.set_shape([flags.crop_size, flags.crop_size, 3])
+                target_images.set_shape([flags.crop_size * 4, flags.crop_size * 4, 3])
+            else:
+                input_images.set_shape([None, None, 3])
+                target_images.set_shape([None, None, 3])
 
             if flags.mode == 'train':
                 paths_lr_batch, paths_hr_batch, inputs_batch, targets_batch = tf.train.shuffle_batch(
@@ -133,8 +136,12 @@ def data_loader(flags):
                     batch_size=flags.batch_size, num_threads=flags.queue_thread, allow_smaller_final_batch=True)
 
             steps_per_epoch = int(math.ceil(len(image_list_lr) / flags.batch_size))
-            inputs_batch.set_shape([flags.batch_size, flags.crop_size, flags.crop_size, 3])
-            targets_batch.set_shape([flags.batch_size, flags.crop_size * 4, flags.crop_size * 4, 3])
+            if flags.mode == 'train':
+                inputs_batch.set_shape([flags.batch_size, flags.crop_size, flags.crop_size, 3])
+                targets_batch.set_shape([flags.batch_size, flags.crop_size * 4, flags.crop_size * 4, 3])
+            else:
+                inputs_batch.set_shape([flags.batch_size, None, None, 3])
+                targets_batch.set_shape([flags.batch_size, None, None, 3])
 
     return data(paths_LR=paths_lr_batch,
                 paths_HR=paths_hr_batch,

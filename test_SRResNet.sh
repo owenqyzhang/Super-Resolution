@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-CUDA_VISIBLE_DEVICES=0 python main.py \
+CUDA_VISIBLE_DEVICES=0 python3 main.py \
     --output_dir ./result/SRResNet/ \
     --summary_dir ./result/SRResNet/log/ \
     --mode test \

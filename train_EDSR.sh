@@ -19,8 +19,8 @@ python main.py \
 --queue_thread 16 \
 --ratio 0.001 \
 --learning_rate 0.0001 \
---decay_step 500000 \
---decay_rate 0.1 \
+--decay_step 200000 \
+--decay_rate 0.5 \
 --stair True \
 --beta 0.9 \
 --max_iter 1000000 \
