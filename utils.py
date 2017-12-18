@@ -170,9 +170,9 @@ def test_data_loader(flags):
             temp[:, :, :] = im[:, :, np.newaxis]
             im = temp.copy()
         if mode == 'LR':
-            im = im / np.max(im)
+            im = im / 255.
         elif mode == 'HR':
-            im = im / np.max(im)
+            im = im / 255.
             im = im * 2 - 1
 
         return im
@@ -206,9 +206,9 @@ def inference_data_loader(flags):
             temp[:, :, :] = im[:, :, np.newaxis]
             im = temp.copy()
         if mode == 'LR':
-            im = im / np.max(im)
+            im = im / 255.
         elif mode == 'HR':
-            im = im / np.max(im)
+            im = im / 255.
             im = im * 2 - 1
 
         return im

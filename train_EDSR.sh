@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 CUDA_VISIBLE_DEVICES=1 \
-python main.py \
+python3 main.py \
 --output_dir ./experiment_EDSR/ \
 --summary_dir ./experiment_EDSR/log/ \
 --mode train \
@@ -9,14 +9,14 @@ python main.py \
 --batch_size 16 \
 --flip True \
 --random_crop True \
---crop_size 24 \
---input_dir_LR ./data/RAISE_LR/ \
---input_dir_HR ./data/RAISE_HR/ \
+--crop_size 48 \
+--input_dir_LR ./data/train_LR/ \
+--input_dir_HR ./data/train_HR/ \
 --num_resblock 32 \
---name_queue_capacity 4096 \
---image_queue_capacity 4096 \
+--name_queue_capacity 800 \
+--image_queue_capacity 800 \
 --perceptual_mode L1 \
---queue_thread 16 \
+--queue_thread 10 \
 --ratio 0.001 \
 --learning_rate 0.0001 \
 --decay_step 200000 \
@@ -24,4 +24,4 @@ python main.py \
 --stair True \
 --beta 0.9 \
 --max_iter 1000000 \
---save_freq 20000
+--save_freq 10000

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 CUDA_VISIBLE_DEVICES=0 \
-python main.py \
+python3 main.py \
 --output_dir ./experiment_ensemble_VGG54/ \
 --summary_dir ./experiment_ensemble_VGG54/log/ \
 --mode train \
@@ -10,8 +10,8 @@ python main.py \
 --flip True \
 --random_crop True \
 --crop_size 24 \
---input_dir_LR ./data/RAISE_LR/ \
---input_dir_HR ./data/RAISE_HR/ \
+--input_dir_LR ./data/train_LR/ \
+--input_dir_HR ./data/train_HR/ \
 --num_resblock 16 \
 --name_queue_capacity 4096 \
 --image_queue_capacity 4096 \

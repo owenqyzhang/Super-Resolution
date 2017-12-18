@@ -1,68 +1,33 @@
 import tensorflow as tf
 import tensorflow.contrib.slim as slim
-import numpy as np
 
 
-def conv(x, hidden_num=64, kernel_size=3, stride=1, w_decay=True):
-    vs = tf.get_variable_scope()
-    with tf.variable_scope(vs, reuse=tf.AUTO_REUSE):
-        in_channels = x.get_shape()[3]
-        if w_decay:
-            weight_decay = tf.constant(0.05, dtype=tf.float32)
-            w = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
-                                initializer=tf.contrib.layers.variance_scaling_initializer(),
-                                regularizer=tf.contrib.layers.l2_regularizer(weight_decay))
+def conv(x, hidden_num=64, kernel_size=3, stride=1, w_decay=True, use_bias=True, scope='conv'):
+    with tf.variable_scope(scope):
+        if use_bias:
+            if w_decay:
+                weight_decay = tf.constant(0.05, dtype=tf.float32)
+                return slim.conv2d(x, hidden_num, [kernel_size, kernel_size], stride, 'SAME',
+                                   activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer(),
+                                   weights_regularizer=tf.contrib.layers.l2_regularizer(weight_decay))
+            else:
+                return slim.conv2d(x, hidden_num, [kernel_size, kernel_size], stride, 'SAME',
+                                   activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer())
         else:
-            w = tf.get_variable('weights', [kernel_size, kernel_size, in_channels, hidden_num],
-                                initializer=tf.contrib.layers.variance_scaling_initializer())
-
-        x = tf.nn.conv2d(x, w, strides=[1, stride, stride, 1], padding='SAME')
-
-    return x
-
-
-def dense(x, hidden_num, is_train):
-    vs = tf.get_variable_scope()
-    with tf.variable_scope(vs, tf.AUTO_REUSE):
-        in_channels = x.get_shape()[1]
-        w = tf.get_variable('weights', [in_channels, hidden_num],
-                            initializer=tf.contrib.layers.variance_scaling_initializer())
-        x = tf.matmul(x, w)
-        x = batch_norm(x, is_train=is_train)
-        x = tf.nn.relu(x)
-    return x
+            if w_decay:
+                weight_decay = tf.constant(0.05, dtype=tf.float32)
+                return slim.conv2d(x, hidden_num, [kernel_size, kernel_size], stride, 'SAME',
+                                   activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer(),
+                                   biases_initializer=None,
+                                   weights_regularizer=tf.contrib.layers.l2_regularizer(weight_decay))
+            else:
+                return slim.conv2d(x, hidden_num, [kernel_size, kernel_size], stride, 'SAME',
+                                   activation_fn=None, weights_initializer=tf.contrib.layers.xavier_initializer(),
+                                   biases_initializer=None)
 
 
-def res_block(x, scope, flags, output_channel=64, stride=1):
-    with tf.variable_scope(scope):
-        x1 = conv(x, output_channel, stride=stride)
-        x1 = batch_norm(x1, is_train=flags.is_training)
-        x1 = prelu(x1)
-        x1 = conv(x1, output_channel, stride=stride)
-        x1 = batch_norm(x1, is_train=flags.is_training)
-        x1 = tf.add(x, x1)
-
-    return x1
-
-
-def res_block_edsr(x, scope, output_channel=256, scale=1, stride=1):
-    with tf.variable_scope(scope):
-        x1 = conv(x, output_channel, stride=stride)
-        x1 = tf.nn.relu(x1)
-        x1 = conv(x1, output_channel, stride=stride)
-        x1 = tf.multiply(x1, tf.constant(scale))
-        x1 = tf.add(x, x1)
-
-    return x1
-
-
-def discriminator_block(x, output_channel, kernel_size, stride, scope, flags):
-    with tf.variable_scope(scope):
-        x1 = conv(x, kernel_size=kernel_size, hidden_num=output_channel, stride=stride)
-        x1 = batch_norm(x1, flags.is_training)
-        x1 = lrelu(x1, 0.2)
-
-    return x1
+def dense(x, hidden_num):
+    return tf.layers.dense(x, hidden_num, activation=None, kernel_initializer=tf.contrib.layers.xavier_initializer())
 
 
 def prelu(x, name='PReLU'):
@@ -79,34 +44,9 @@ def lrelu(x, alpha=0.3, name='LeakyReLU'):
         return tf.nn.relu(x) - alpha * tf.nn.relu(-x)
 
 
-def batch_norm(x, is_train=True, decay=0.99, epsilon=0.001, name=''):
-    vs = tf.get_variable_scope()
-    with tf.variable_scope(vs, reuse=tf.AUTO_REUSE):
-        shape_x = x.get_shape().as_list()
-        beta = tf.get_variable('beta' + name, shape_x[-1], initializer=tf.constant_initializer(0.0))
-        gamma = tf.get_variable('gamma' + name, shape_x[-1], initializer=tf.constant_initializer(1.0))
-        moving_mean = tf.get_variable('moving_mean' + name, shape_x[-1],
-                                      initializer=tf.constant_initializer(0.0), trainable=False)
-        moving_var = tf.get_variable('moving_var' + name, shape_x[-1],
-                                     initializer=tf.constant_initializer(1.0), trainable=False)
-
-        if is_train:
-            mean, var = tf.nn.moments(x, np.arange(len(shape_x) - 1), keep_dims=True)
-            mean = tf.reshape(mean, [mean.shape.as_list()[-1]])
-            var = tf.reshape(var, [var.shape.as_list()[-1]])
-
-            update_moving_mean = tf.assign(moving_mean, moving_mean * decay + mean * (1 - decay))
-            update_moving_var = tf.assign(moving_var,
-                                          moving_var * decay + shape_x[0] / (shape_x[0] - 1) * var * (1 - decay))
-            update_ops = [update_moving_mean, update_moving_var]
-
-            with tf.control_dependencies(update_ops):
-                return tf.nn.batch_normalization(x, mean, var, beta, gamma, epsilon)
-
-        else:
-            mean = moving_mean
-            var = moving_var
-            return tf.nn.batch_normalization(x, mean, var, beta, gamma, epsilon)
+def batch_norm(x, is_train=True):
+    return slim.batch_norm(x, decay=0.9, epsilon=0.001, updates_collections=tf.GraphKeys.UPDATE_OPS,
+                           scale=False, fused=True, is_training=is_train)
 
 
 def pixel_shuffler(x, scale=2):
