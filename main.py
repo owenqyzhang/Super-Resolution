@@ -107,14 +107,14 @@ if FLAGS.mode == 'test':
     print('Finished building the network.')
 
     with tf.variable_scope('convert_image'):
-        if FLAGS.task in ['SRResNet', 'SRGAN']:
-            inputs = deprocess_lr(inputs_raw)
-            targets = deprocess(targets_raw)
-            outputs = deprocess(gen_output)
-        else:
-            inputs = inputs_raw
-            targets = targets_raw
-            outputs = gen_output
+        # if FLAGS.task in ['SRResNet', 'SRGAN']:
+        inputs = deprocess_lr(inputs_raw)
+        targets = deprocess(targets_raw)
+        outputs = deprocess(gen_output)
+        # else:
+        #     inputs = inputs_raw
+        #     targets = targets_raw
+        #     outputs = gen_output
 
         converted_inputs = tf.image.convert_image_dtype(inputs, dtype=tf.uint8, saturate=True)
         converted_targets = tf.image.convert_image_dtype(targets, dtype=tf.uint8, saturate=True)

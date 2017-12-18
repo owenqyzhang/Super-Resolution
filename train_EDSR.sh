@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-CUDA_VISIBLE_DEVICES=1 \
+CUDA_VISIBLE_DEVICES=0 \
 python3 main.py \
 --output_dir ./experiment_EDSR/ \
 --summary_dir ./experiment_EDSR/log/ \
@@ -13,10 +13,10 @@ python3 main.py \
 --input_dir_LR ./data/train_LR/ \
 --input_dir_HR ./data/train_HR/ \
 --num_resblock 32 \
---name_queue_capacity 800 \
---image_queue_capacity 800 \
+--name_queue_capacity 2048 \
+--image_queue_capacity 2048 \
 --perceptual_mode L1 \
---queue_thread 10 \
+--queue_thread 32 \
 --ratio 0.001 \
 --learning_rate 0.0001 \
 --decay_step 200000 \

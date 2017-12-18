@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-CUDA_VISIBLE_DEVICES=0 python3 main.py \
+CUDA_VISIBLE_DEVICES=1 python3 main.py \
     --output_dir ./result/EDSR/ \
     --summary_dir ./result/EDSR/log/ \
     --mode test \
@@ -10,5 +10,5 @@ CUDA_VISIBLE_DEVICES=0 python3 main.py \
     --input_dir_HR ./data/test_HR/ \
     --num_resblocks 16 \
     --pre_trained_model True \
-    --checkpoint_EDSR ./experiment_EDSR/model-500000
+    --checkpoint_EDSR ./experiment_EDSR/model-10000
 

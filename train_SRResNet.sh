@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-CUDA_VISIBLE_DEVICES=0 \
+CUDA_VISIBLE_DEVICES=1 \
 python3 main.py \
 --output_dir ./experiment_SRResNet/ \
 --summary_dir ./experiment_SRResNet/log/ \
@@ -13,10 +13,10 @@ python3 main.py \
 --input_dir_LR ./data/train_LR/ \
 --input_dir_HR ./data/train_HR/ \
 --num_resblock 16 \
---name_queue_capacity 800 \
---image_queue_capacity 800 \
+--name_queue_capacity 2048 \
+--image_queue_capacity 2048 \
 --perceptual_mode MSE \
---queue_thread 10 \
+--queue_thread 16 \
 --ratio 0.001 \
 --learning_rate 0.0001 \
 --decay_step 500000 \
